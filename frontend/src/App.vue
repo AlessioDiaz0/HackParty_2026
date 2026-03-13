@@ -5,46 +5,22 @@ const locale = ref('it') // 'it' or 'en'
 const showLangMenu = ref(false)
 
 const dynamicTranslations = ref({
-  it: {
-    header_title: "Zero-Shot System",
-    header_subtitle: "Smistamento automatico ticket gestito dall'IA",
-    portal_customer: "👤 Area Utente",
-    django_admin: "🛡️ Admin",
-    new_request: "Nuova Richiesta Supporto",
-    describe_problem: "Descrivi il tuo problema o richiesta",
-    placeholder_textarea: "Es: \"L'applicazione va in crash quando provo a caricare un PDF...\"",
-    submit_btn: "Invia all'IA",
-    analyzing: "Analisi in corso...",
-    send_another: "Invia un'altra richiesta",
-    classified_title: "Richiesta Classificata",
-    classified_text: "L'IA ha assegnato la tua richiesta al dipartimento competente.",
-    forwarded_to: "Inoltrato al team",
-    how_it_works: "Come funziona?",
-    how_it_works_text: "Le richieste vengono elaborate in tempo reale e instradate automaticamente per garantirti assistenza rapida.",
-    step_you: "👤 Tu",
-    step_ia: "🧠 IA",
-    step_res: "👥 Risoluzione",
-    no_tickets: "Nessun ticket ricevuto.",
-    empty_hint: "Invia richieste dal portale per visualizzarle qui.",
-    col_id: "ID",
-    col_time: "Ora",
-    col_msg: "Messaggio",
-    col_cat: "Categoria",
-    col_conf: "Confidenza",
-    col_reason: "Reasoning",
-    cat_task: "Task",
-    cat_bug: "Bug",
-    cat_enhancement: "Miglioria",
-    cat_research: "Ricerca",
-    cat_design: "Design",
-    cat_testing: "Testing",
-    cat_deployment: "Rilascio",
-    cat_documentation: "Documentazione"
-  },
-  en: {} // Will be filled dynamically by AI
+  it: {}, // Will be fetched from backend
+  en: {}  // Will be filled dynamically by AI
 })
 
 const isTranslating = ref(false)
+
+const fetchBaseTranslations = async () => {
+  try {
+    const response = await fetch('/api/base-translations')
+    if (response.ok) {
+      dynamicTranslations.value.it = await response.json()
+    }
+  } catch (err) {
+    console.error("Errore nel caricamento traduzioni base:", err)
+  }
+}
 
 const fetchTranslations = async (targetLocale) => {
   // Se abbiamo già le traduzioni o siamo in IT, non fare nulla (per ora)
@@ -146,9 +122,12 @@ const fetchTickets = async () => {
   }
 }
 
-// Carica i ticket all'avvio
+// Carica i dati all'avvio
 import { onMounted } from 'vue'
-onMounted(fetchTickets)
+onMounted(() => {
+  fetchTickets()
+  fetchBaseTranslations()
+})
 
 const categories = [
   { id: 'task', label: 'Task', desc: 'General work item', icon: '📝', color: '#3b82f6' },
