@@ -46,7 +46,8 @@ class EmbeddingStore:
     # ChromaDB operations
     # ------------------------------------------------------------------
 
-    def add_message(self, message: str, category: str, confidence: str) -> str:
+    def add_message(self, message: str, category: str, confidence: str,
+                    urgency: str = "Medium") -> str:
         """Store a classified message with its embedding in ChromaDB."""
         self._counter += 1
         doc_id = f"msg_{self._counter}"
@@ -57,7 +58,8 @@ class EmbeddingStore:
             ids=[doc_id],
             embeddings=[embedding],
             documents=[message],
-            metadatas=[{"category": category, "confidence": confidence}],
+            metadatas=[{"category": category, "confidence": confidence,
+                        "urgency": urgency}],
         )
         return doc_id
 

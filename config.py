@@ -15,6 +15,10 @@ LLM_MODEL = "meta/llama-3.1-8b-instruct"
 EMBEDDING_MODEL = "nvidia/nv-embedqa-e5-v5"
 EMBEDDING_DIMENSION = 1024
 
+# Lara Translate credentials
+LARA_ACCESS_KEY_ID = "5LTVO8QILKTTC3IR262O55SPKD"
+LARA_ACCESS_KEY_SECRET = "-Z52NwU3mPw2mthPZWdPoH5P-UMi31d0FPtXti1cLfM"
+
 # Domain categories for customer message classification
 DOMAIN_CATEGORIES = [
     "Task",           # General work item
