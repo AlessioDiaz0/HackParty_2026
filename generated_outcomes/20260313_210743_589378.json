@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-03-13T21:07:43.589436",
+  "message": "aggiungere il filtro per data nell tabella utenti",
+  "category": "Task",
+  "confidence": "high",
+  "reasoning": "The message contains the verb 'aggiungere' which is a common action in task-oriented language.",
+  "doc_id": "msg_2"
+}
