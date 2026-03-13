@@ -1,28 +1,35 @@
-import { Queue, Worker, Job } from 'bullmq';
-import { config } from './config';
+import { EventEmitter } from 'events';
 import { logger } from './logger';
 
-export const connection = {
-  url: config.REDIS_URL,
-};
+class SimpleQueue extends EventEmitter {
+  constructor(private name: string) {
+    super();
+  }
 
-export const ticketQueue = new Queue('ticket-processing', { connection });
+  async add(jobName: string, data: any) {
+    logger.info({ queue: this.name, jobName, data }, 'Job added to in-memory queue');
+    // Process immediately or in next tick
+    setImmediate(() => {
+      this.emit('process', { id: Math.random().toString(36).substr(2, 9), name: jobName, data });
+    });
+  }
+}
 
-logger.info(`BullMQ connected to Redis at ${config.REDIS_URL}`);
+export const ticketQueue = new SimpleQueue('ticket-processing');
 
 export const createWorker = (
   queueName: string,
-  processor: (job: Job) => Promise<any>
+  processor: (job: any) => Promise<any>
 ) => {
-  const worker = new Worker(queueName, processor, { connection });
-  
-  worker.on('completed', (job: Job) => {
-    logger.info({ jobId: job.id, queue: queueName }, 'Job completed');
+  // For in-memory, we just listen to the 'process' event
+  ticketQueue.on('process', async (job) => {
+    try {
+      await processor(job);
+      logger.info({ jobId: job.id, queue: queueName }, 'Job completed');
+    } catch (err) {
+      logger.error({ jobId: job.id, queue: queueName, err }, 'Job failed');
+    }
   });
 
-  worker.on('failed', (job: Job | undefined, err: Error) => {
-    logger.error({ jobId: job?.id, queue: queueName, err }, 'Job failed');
-  });
-
-  return worker;
+  return { on: (event: string, cb: Function) => {} }; // Mock worker returning
 };

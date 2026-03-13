@@ -6,7 +6,7 @@ dotenv.config();
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.string().default('3000'),
-  REDIS_URL: z.string().default('redis://localhost:6379'),
+  DATABASE_URL: z.string().default('postgresql://postgres:postgres@localhost:5432/hackparty'),
   JWT_SECRET: z.string().default('supersecret'),
   OPENAI_API_KEY: z.string().optional(),
   ELEVENLABS_API_KEY: z.string().optional(),

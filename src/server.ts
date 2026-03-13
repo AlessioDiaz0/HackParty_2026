@@ -7,8 +7,12 @@ import { languageDetector } from './modules/i18n/detector';
 import { translatorService } from './modules/i18n/translator';
 import { ttsService } from './modules/speech/tts.service';
 import { startTicketWorker } from './workers/ticket.worker';
+import { initSchema } from './core/database';
 
 const start = async () => {
+  // Init DB schema
+  await initSchema();
+  
   const { app, ticketService } = buildApp();
   
   // Initialize AI providers

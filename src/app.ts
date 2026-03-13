@@ -12,7 +12,7 @@ export const buildApp = () => {
   app.register(fastifyJwt, { secret: config.JWT_SECRET });
 
   // Mock Authentication decorator
-  app.decorateRequest('user', null as any);
+  // app.decorateRequest('user', null as any);
   app.addHook('onRequest', async (request, reply) => {
     try {
       // For the hackathon, hardcode user auth bypass
