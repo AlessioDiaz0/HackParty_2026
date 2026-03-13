@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-03-13T20:56:24.275938",
+  "message": "hello",
+  "category": "Research",
+  "confidence": "low",
+  "reasoning": "The message is too generic to be classified into a specific category.",
+  "doc_id": "msg_1"
+}
