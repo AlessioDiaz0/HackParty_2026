@@ -29,8 +29,6 @@ def save_outcome(message: str, result: dict, doc_id: str) -> str:
         "message": message,
         "category": result["category"],
         "confidence": result["confidence"],
-        "reasoning": result["reasoning"],
-        "doc_id": doc_id,
     }
 
     with open(filepath, "w") as f:
@@ -46,13 +44,11 @@ def print_header():
     print("=" * 60)
 
 
-def print_result(message: str, result: dict, doc_id: str):
+def print_result(message: str, result: dict):
     print(f"\n{'─' * 50}")
     print(f"  Message:    {message}")
     print(f"  Category:   {result['category']}")
     print(f"  Confidence: {result['confidence']}")
-    print(f"  Reasoning:  {result['reasoning']}")
-    print(f"  Stored as:  {doc_id}")
     print(f"{'─' * 50}")
 
 
@@ -106,7 +102,7 @@ def run_interactive():
             user_input, result["category"], result["confidence"]
         )
         path = save_outcome(user_input, result, doc_id)
-        print_result(user_input, result, doc_id)
+        print_result(user_input, result)
         print(f"  Saved to: {path}")
 
 
