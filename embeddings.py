@@ -20,7 +20,7 @@ class EmbeddingStore:
     """Manages NVIDIA NIM embeddings and ChromaDB vector storage."""
 
     def __init__(self, collection_name: str = "customer_messages"):
-        self._chroma = chromadb.Client()
+        self._chroma = chromadb.PersistentClient(path="./chroma_db")
         self._collection = self._chroma.get_or_create_collection(
             name=collection_name,
             metadata={"hnsw:space": "cosine"},
@@ -90,7 +90,7 @@ class EmbeddingStore:
         all_data = self._collection.get(include=["metadatas"])
         category_counts: dict[str, int] = {}
         for meta in all_data["metadatas"]:
-            cat = meta.get("category", "Unknown")
+            cat = str(meta.get("category", "Unknown"))
             category_counts[cat] = category_counts.get(cat, 0) + 1
 
         return {"total_messages": count, "categories": category_counts}

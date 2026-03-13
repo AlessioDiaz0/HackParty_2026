@@ -42,44 +42,7 @@ const fetchTranslations = async (targetLocale) => {
       const data = await response.json()
       dynamicTranslations.value[targetLocale] = data.translations
     } else {
-      console.warn("AI Translation Service non ancora disponibile. Uso fallback inglese statico.")
-      // Fallback temporaneo per test
-      dynamicTranslations.value.en = {
-        header_title: "Zero-Shot System",
-        header_subtitle: "AI-powered automatic ticket sorting",
-        portal_customer: "👤 User Portal",
-        django_admin: "🛡️ Admin",
-        new_request: "New Support Request",
-        describe_problem: "Describe your problem or request",
-        placeholder_textarea: "e.g. \"The app crashes when I try to upload a PDF...\"",
-        submit_btn: "Send to AI",
-        analyzing: "Analyzing...",
-        send_another: "Send another request",
-        classified_title: "Request Classified",
-        classified_text: "AI has assigned your request to the competent department.",
-        forwarded_to: "Forwarded to team",
-        how_it_works: "How it works?",
-        how_it_works_text: "Requests are processed in real-time and automatically routed to ensure fast assistance.",
-        step_you: "👤 You",
-        step_ia: "🧠 AI",
-        step_res: "👥 Resolution",
-        no_tickets: "No tickets received.",
-        empty_hint: "Send requests from the portal to see them here.",
-        col_id: "ID",
-        col_time: "Time",
-        col_msg: "Message",
-        col_cat: "Category",
-        col_conf: "Confidence",
-        col_reason: "Reasoning",
-        cat_task: "Task",
-        cat_bug: "Bug",
-        cat_enhancement: "Enhancement",
-        cat_research: "Research",
-        cat_design: "Design",
-        cat_testing: "Testing",
-        cat_deployment: "Deployment",
-        cat_documentation: "Documentation"
-      }
+      console.warn("AI Translation Service non ancora disponibile.")
     }
   } catch (err) {
     console.error("Errore durante la traduzione AI:", err)
@@ -95,7 +58,9 @@ const t = (key) => {
 
 const languages = [
   { code: 'it', label: 'Italiano', flag: '🇮🇹' },
-  { code: 'en', label: 'English', flag: '🇺🇸' }
+  { code: 'en', label: 'English', flag: '🇺🇸' },
+  { code: 'es', label: 'Español', flag: '🇪🇸' },
+  { code: 'fr', label: 'Français', flag: '🇫🇷' }
 ]
 
 const setLanguage = (code) => {
@@ -112,14 +77,8 @@ const classificationResult = ref(null)
 const allRequests = ref([]) 
 
 const fetchTickets = async () => {
-  try {
-    const response = await fetch('/api/tickets')
-    if (response.ok) {
-      allRequests.value = await response.json()
-    }
-  } catch (err) {
-    console.error("Errore nel recupero ticket:", err)
-  }
+  // Not needed if we don't have a dashboard, but keeping it empty for now 
+  // if you want to use it for something else later.
 }
 
 // Carica i dati all'avvio
@@ -189,15 +148,7 @@ const resetForm = () => {
   classificationResult.value = null
 }
 
-// Raggruppa le richieste per la dashboard Admin
-const groupedRequests = computed(() => {
-  const groups = {}
-  categories.forEach(c => groups[c.id] = [])
-  allRequests.value.forEach(req => {
-    if (groups[req.category]) groups[req.category].push(req)
-  })
-  return groups
-})
+// Ticket grouping removed as dashboard is no longer present
 </script>
 
 <template>
@@ -239,13 +190,8 @@ const groupedRequests = computed(() => {
         
         <!-- Navigazione Viste -->
         <div class="view-toggle">
-          <button 
-            class="active"
-          >
-            {{ t('portal_customer') }}
-          </button>
           <a href="http://localhost:8000/admin/" target="_blank" class="admin-link-btn">
-            {{ t('django_admin') }}
+            🛡️ {{ t('django_admin') }}
           </a>
         </div>
       </div>

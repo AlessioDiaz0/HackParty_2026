@@ -33,5 +33,11 @@ BASE_TRANSLATIONS = {
     "cat_design": "Design",
     "cat_testing": "Testing",
     "cat_deployment": "Rilascio",
-    "cat_documentation": "Documentazione"
+    "cat_documentation": "Documentazione",
+    "sync": "Sincronizza",
+    "total_requests": "Richieste Totali",
+    "empty_kanban": "Vuoto",
+    "dashboard_title": "Dashboard Admin",
+    "view_kanban": "Kanban",
+    "view_table": "Tabella"
 }

@@ -7,6 +7,8 @@ from datetime import datetime
 
 from .translations_data import BASE_TRANSLATIONS
 
+from .translator_logic import Translator
+
 class ClassifyView(APIView):
     def post(self, request):
         prompt = request.data.get('prompt')
@@ -53,12 +55,10 @@ class TranslateView(APIView):
         if not source_strings or not target_lang:
             return Response({"error": "Missing source_strings or target_lang"}, status=status.HTTP_400_BAD_REQUEST)
         
-        # TODO: Implementare qui il motorino AI per la traduzione
-        # Per ora ritorniamo un placeholder o il fallback se non ancora implementato
-        # In una fase successiva, questo chiamerà NVIDIA NIM o simili
+        translator = Translator()
+        translations = translator.translate(source_strings, target_lang)
         
         return Response({
             "status": "success",
-            "message": "AI translation engine placeholder - awaiting implementation",
-            "translations": {} # L'IA riempirà questo oggetto
+            "translations": translations
         }, status=status.HTTP_200_OK)
