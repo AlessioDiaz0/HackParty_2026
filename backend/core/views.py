@@ -33,6 +33,8 @@ class TicketListView(APIView):
                 "id": t.id,
                 "text": t.text,
                 "category": t.category.lower(),
+                "confidence": t.confidence,
+                "reasoning": t.reasoning,
                 "date": t.created_at.strftime("%H:%M")
             })
         return Response(data, status=status.HTTP_200_OK)

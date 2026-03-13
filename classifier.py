@@ -6,7 +6,7 @@ prompt engineering — no pre-provided examples.
 """
 
 import json
-from openai import OpenAI
+import requests
 
 from config import NVIDIA_API_KEY, NVIDIA_BASE_URL, LLM_MODEL, DOMAIN_CATEGORIES
 
@@ -34,7 +34,6 @@ class ZeroShotClassifier:
     """Classifies customer messages into domain categories via prompt engineering."""
 
     def __init__(self, categories: list[str] | None = None):
-        self._client = OpenAI(base_url=NVIDIA_BASE_URL, api_key=NVIDIA_API_KEY)
         self._categories = categories or DOMAIN_CATEGORIES
         self._system_prompt = SYSTEM_PROMPT.format(
             categories="\n".join(f"- {c}" for c in self._categories)
@@ -46,17 +45,25 @@ class ZeroShotClassifier:
 
         Returns dict with keys: category, confidence, reasoning.
         """
-        response = self._client.chat.completions.create(
-            model=LLM_MODEL,
-            messages=[
+        headers = {
+            "Authorization": f"Bearer {NVIDIA_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "model": LLM_MODEL,
+            "messages": [
                 {"role": "system", "content": self._system_prompt},
                 {"role": "user", "content": message},
             ],
-            temperature=0.0,
-            max_tokens=256,
-        )
-
-        raw = response.choices[0].message.content.strip()
+            "temperature": 0.0,
+            "max_tokens": 256,
+        }
+        
+        response = requests.post(f"{NVIDIA_BASE_URL}/chat/completions", headers=headers, json=payload)
+        response.raise_for_status()
+        
+        data = response.json()
+        raw = data['choices'][0]['message']['content'].strip()
 
         # Strip possible markdown code fences
         if raw.startswith("```"):

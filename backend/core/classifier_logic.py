@@ -1,6 +1,6 @@
 import json
 import os
-from openai import OpenAI
+import requests
 
 # We'll use environment variables or hardcoded defaults for simplicity in this bridge
 NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
@@ -38,7 +38,6 @@ Required JSON format:
 
 class ZeroShotClassifier:
     def __init__(self, categories=None):
-        self._client = OpenAI(base_url=NVIDIA_BASE_URL, api_key=NVIDIA_API_KEY)
         self._categories = categories or DOMAIN_CATEGORIES
         self._system_prompt = SYSTEM_PROMPT.format(
             categories="\n".join(f"- {c}" for c in self._categories)
@@ -49,16 +48,25 @@ class ZeroShotClassifier:
             return {"category": "Task", "confidence": "high", "reasoning": "API Key missing, dummy response."}
             
         try:
-            response = self._client.chat.completions.create(
-                model=LLM_MODEL,
-                messages=[
+            headers = {
+                "Authorization": f"Bearer {NVIDIA_API_KEY}",
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "model": LLM_MODEL,
+                "messages": [
                     {"role": "system", "content": self._system_prompt},
                     {"role": "user", "content": message},
                 ],
-                temperature=0.0,
-                max_tokens=256,
-            )
-            raw = response.choices[0].message.content.strip()
+                "temperature": 0.0,
+                "max_tokens": 256
+            }
+            
+            response = requests.post(f"{NVIDIA_BASE_URL}/chat/completions", headers=headers, json=payload)
+            response.raise_for_status()
+            
+            data = response.json()
+            raw = data['choices'][0]['message']['content'].strip()
             
             # Strip possible markdown code fences
             if raw.startswith("```"):
@@ -73,7 +81,7 @@ class ZeroShotClassifier:
             result = {
                 "category": "Task",
                 "confidence": "low",
-                "reasoning": "Error processing LLM response.",
+                "reasoning": f"Error processing LLM response: {str(e)}",
             }
 
         if result.get("category") not in self._categories:

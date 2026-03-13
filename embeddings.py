@@ -6,7 +6,7 @@ can be retrieved for analytics and reference.
 """
 
 import chromadb
-from openai import OpenAI
+import requests
 
 from config import (
     NVIDIA_API_KEY,
@@ -20,7 +20,6 @@ class EmbeddingStore:
     """Manages NVIDIA NIM embeddings and ChromaDB vector storage."""
 
     def __init__(self, collection_name: str = "customer_messages"):
-        self._client = OpenAI(base_url=NVIDIA_BASE_URL, api_key=NVIDIA_API_KEY)
         self._chroma = chromadb.Client()
         self._collection = self._chroma.get_or_create_collection(
             name=collection_name,
@@ -34,13 +33,23 @@ class EmbeddingStore:
 
     def _embed(self, texts: list[str]) -> list[list[float]]:
         """Get embeddings from NVIDIA NIM for a list of texts."""
-        response = self._client.embeddings.create(
-            input=texts,
-            model=EMBEDDING_MODEL,
-            encoding_format="float",
-            extra_body={"input_type": "query", "truncate": "NONE"},
-        )
-        return [item.embedding for item in response.data]
+        headers = {
+            "Authorization": f"Bearer {NVIDIA_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "input": texts,
+            "model": EMBEDDING_MODEL,
+            "encoding_format": "float",
+            "input_type": "query",
+            "truncate": "NONE"
+        }
+        
+        response = requests.post(f"{NVIDIA_BASE_URL}/embeddings", headers=headers, json=payload)
+        response.raise_for_status()
+        
+        data = response.json()
+        return [item['embedding'] for item in data['data']]
 
     # ------------------------------------------------------------------
     # ChromaDB operations
