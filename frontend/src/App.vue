@@ -22,27 +22,36 @@ const fetchBaseTranslations = async () => {
   }
 }
 
-const fetchTranslations = async (targetLocale) => {
-  // Se abbiamo già le traduzioni o siamo in IT, non fare nulla (per ora)
-  if (targetLocale === 'it' || Object.keys(dynamicTranslations.value[targetLocale] || {}).length > 0) return
+const translateResult = async (targetLocale) => {
+  if (targetLocale === 'it') {
+    translatedResult.value = null
+    return
+  }
 
   isTranslating.value = true
   try {
-    // Predisposizione per il motorino AI che implementerai
+    const targetLabel = languages.find(l => l.code === targetLocale)?.label || targetLocale
+    
+    // Stringhe specifiche da tradurre per il risultato
+    const sourceStrings = {
+      title: dynamicTranslations.value.it.classified_title,
+      text: dynamicTranslations.value.it.classified_text,
+      category: dynamicTranslations.value.it['cat_' + classificationResult.value],
+      forwarded: dynamicTranslations.value.it.forwarded_to
+    }
+
     const response = await fetch('/api/translate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
-        source_strings: dynamicTranslations.value.it,
-        target_lang: targetLocale 
+        source_strings: sourceStrings,
+        target_lang: targetLabel 
       })
     })
     
     if (response.ok) {
       const data = await response.json()
-      dynamicTranslations.value[targetLocale] = data.translations
-    } else {
-      console.warn("AI Translation Service non ancora disponibile.")
+      translatedResult.value = data.translations
     }
   } catch (err) {
     console.error("Errore durante la traduzione AI:", err)
@@ -64,9 +73,9 @@ const languages = [
 ]
 
 const setLanguage = (code) => {
-  locale.value = code
+  resultLocale.value = code
   showLangMenu.value = false
-  fetchTranslations(code)
+  translateResult(code)
 }
 
 const inputMessage = ref('')
@@ -165,35 +174,9 @@ const resetForm = () => {
       </div>
 
       <div class="header-actions">
-        <!-- Language Switcher -->
-        <div class="lang-selector">
-          <button class="lang-btn" @click="showLangMenu = !showLangMenu">
-            <span class="flag">{{ languages.find(l => l.code === locale).flag }}</span>
-            <span class="lang-label">{{ languages.find(l => l.code === locale).label }}</span>
-            <svg class="chevron" :class="{ open: showLangMenu }" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"></polyline></svg>
-          </button>
-          
-          <transition name="pop">
-            <div v-if="showLangMenu" class="lang-dropdown">
-              <button 
-                v-for="lang in languages" 
-                :key="lang.code" 
-                @click="setLanguage(lang.code)"
-                :class="{ active: locale === lang.code }"
-              >
-                <span class="flag">{{ lang.flag }}</span>
-                {{ lang.label }}
-              </button>
-            </div>
-          </transition>
-        </div>
-        
-        <!-- Navigazione Viste -->
-        <div class="view-toggle">
-          <a href="http://localhost:8000/admin/" target="_blank" class="admin-link-btn">
-            🛡️ {{ t('django_admin') }}
-          </a>
-        </div>
+        <a href="http://localhost:8000/admin/" target="_blank" class="admin-link-btn">
+          🛡️ {{ t('django_admin') }}
+        </a>
       </div>
     </header>
 
@@ -239,9 +222,27 @@ const resetForm = () => {
 
         <transition name="fade-slide">
           <div class="result-card" v-if="classificationResult && !isClassifying">
-            <h3 class="result-title">{{ t('classified_title') }}</h3>
+            <div class="result-header">
+              <h3 class="result-title">{{ translatedResult?.title || t('classified_title') }}</h3>
+              
+              <!-- Local Language Selector for Result -->
+              <div class="lang-selector mini">
+                <button class="lang-btn mini" @click="showLangMenu = !showLangMenu">
+                  <span class="flag">{{ languages.find(l => l.code === resultLocale).flag }}</span>
+                  <svg class="chevron" :class="{ open: showLangMenu }" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+                <transition name="pop">
+                  <div v-if="showLangMenu" class="lang-dropdown mini">
+                    <button v-for="lang in languages" :key="lang.code" @click="setLanguage(lang.code)" :class="{ active: resultLocale === lang.code }">
+                      <span class="flag">{{ lang.flag }}</span> {{ lang.label }}
+                    </button>
+                  </div>
+                </transition>
+              </div>
+            </div>
+
             <p style="margin-bottom: 15px; color: var(--text-muted); font-size: 0.9rem;">
-              {{ t('classified_text') }}
+              {{ translatedResult?.text || t('classified_text') }}
             </p>
             <div 
               class="result-badge" 
@@ -253,9 +254,10 @@ const resetForm = () => {
             >
               <span class="result-icon-large">{{ getCategoryInfo(classificationResult)?.icon }}</span>
               <div class="result-info">
-                <strong>{{ t('cat_' + classificationResult) }}</strong>
-                <span>{{ t('forwarded_to') }} {{ t('cat_' + classificationResult) }}</span>
+                <strong>{{ translatedResult?.category || t('cat_' + classificationResult) }}</strong>
+                <span>{{ translatedResult?.forwarded || t('forwarded_to') }} {{ translatedResult?.category || t('cat_' + classificationResult) }}</span>
               </div>
+              <div v-if="isTranslating" class="mini-spinner"></div>
             </div>
           </div>
         </transition>
@@ -379,9 +381,40 @@ const resetForm = () => {
   color: white;
 }
 
-.lang-dropdown button.active {
-  background: rgba(99, 102, 241, 0.1);
-  color: var(--primary);
+/* MINI STYLES */
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.lang-selector.mini {
+  position: relative;
+}
+
+.lang-btn.mini {
+  padding: 4px 8px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 8px;
+  font-size: 0.8rem;
+}
+
+.lang-dropdown.mini {
+  right: 0;
+  top: 100%;
+  min-width: 120px;
+  font-size: 0.85rem;
+}
+
+.mini-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.2);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-left: auto;
 }
 
 /* Toggle Views */
