@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-03-13T20:56:28.489827",
+  "message": "hi",
+  "category": "Research",
+  "confidence": "low",
+  "reasoning": "The message is too short and lacks context to determine a specific category.",
+  "doc_id": "msg_2"
+}
