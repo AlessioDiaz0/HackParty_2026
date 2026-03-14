@@ -5,11 +5,8 @@ const locale = ref('it') // 'it' or 'en'
 const showLangMenu = ref(false)
 
 const dynamicTranslations = ref({
-  it: {}, // Will be fetched from backend
-  en: {}  // Will be filled dynamically by AI
+  it: {} // Will be fetched from backend
 })
-
-const isTranslating = ref(false)
 
 const fetchBaseTranslations = async () => {
   try {
@@ -22,60 +19,9 @@ const fetchBaseTranslations = async () => {
   }
 }
 
-const translateResult = async (targetLocale) => {
-  if (targetLocale === 'it') {
-    translatedResult.value = null
-    return
-  }
-
-  isTranslating.value = true
-  try {
-    const targetLabel = languages.find(l => l.code === targetLocale)?.label || targetLocale
-    
-    // Stringhe specifiche da tradurre per il risultato
-    const sourceStrings = {
-      title: dynamicTranslations.value.it.classified_title,
-      text: dynamicTranslations.value.it.classified_text,
-      category: dynamicTranslations.value.it['cat_' + classificationResult.value],
-      forwarded: dynamicTranslations.value.it.forwarded_to
-    }
-
-    const response = await fetch('/api/translate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        source_strings: sourceStrings,
-        target_lang: targetLabel 
-      })
-    })
-    
-    if (response.ok) {
-      const data = await response.json()
-      translatedResult.value = data.translations
-    }
-  } catch (err) {
-    console.error("Errore durante la traduzione AI:", err)
-  } finally {
-    isTranslating.value = false
-  }
-}
-
 const t = (key) => {
   const table = dynamicTranslations.value[locale.value] || dynamicTranslations.value.it
   return table[key] || key
-}
-
-const languages = [
-  { code: 'it', label: 'Italiano', flag: '🇮🇹' },
-  { code: 'en', label: 'English', flag: '🇺🇸' },
-  { code: 'es', label: 'Español', flag: '🇪🇸' },
-  { code: 'fr', label: 'Français', flag: '🇫🇷' }
-]
-
-const setLanguage = (code) => {
-  resultLocale.value = code
-  showLangMenu.value = false
-  translateResult(code)
 }
 
 const inputMessage = ref('')
@@ -86,8 +32,14 @@ const classificationResult = ref(null)
 const allRequests = ref([]) 
 
 const fetchTickets = async () => {
-  // Not needed if we don't have a dashboard, but keeping it empty for now 
-  // if you want to use it for something else later.
+  try {
+    const response = await fetch('/api/tickets')
+    if (response.ok) {
+      allRequests.value = await response.json()
+    }
+  } catch (err) {
+    console.error("Errore nel recupero ticket:", err)
+  }
 }
 
 // Carica i dati all'avvio
@@ -119,18 +71,28 @@ const classifyMessage = async () => {
   classificationResult.value = null
 
   try {
+    console.log("Classifying: ", inputMessage.value)
     const response = await fetch('/api/classify', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
       body: JSON.stringify({ prompt: inputMessage.value })
     })
 
-    if (!response.ok) throw new Error(`Errore HTTP: ${response.status}`)
+    if (!response.ok) {
+      console.error(`Errore classificatore: ${response.status} ${response.statusText}`)
+      throw new Error(`Errore HTTP: ${response.status}`)
+    }
+    
     const data = await response.json()
+    console.log("Classifier Response: ", data)
     classificationResult.value = data.category.toLowerCase()
   } catch (err) {
+    console.error("Fallita comunicazione col backend. Uso mock:", err);
     console.warn("Modalità fallback Demo attiva.");
-    await new Promise(resolve => setTimeout(resolve, 1800));
+    await new Promise(resolve => setTimeout(resolve, 800));
     
     const text = inputMessage.value.toLowerCase();
     let computedCategory = 'task';
@@ -175,7 +137,7 @@ const resetForm = () => {
 
       <div class="header-actions">
         <a href="http://localhost:8000/admin/" target="_blank" class="admin-link-btn">
-          🛡️ {{ t('django_admin') }}
+          {{ t('django_admin') }}
         </a>
       </div>
     </header>
@@ -222,27 +184,9 @@ const resetForm = () => {
 
         <transition name="fade-slide">
           <div class="result-card" v-if="classificationResult && !isClassifying">
-            <div class="result-header">
-              <h3 class="result-title">{{ translatedResult?.title || t('classified_title') }}</h3>
-              
-              <!-- Local Language Selector for Result -->
-              <div class="lang-selector mini">
-                <button class="lang-btn mini" @click="showLangMenu = !showLangMenu">
-                  <span class="flag">{{ languages.find(l => l.code === resultLocale).flag }}</span>
-                  <svg class="chevron" :class="{ open: showLangMenu }" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                </button>
-                <transition name="pop">
-                  <div v-if="showLangMenu" class="lang-dropdown mini">
-                    <button v-for="lang in languages" :key="lang.code" @click="setLanguage(lang.code)" :class="{ active: resultLocale === lang.code }">
-                      <span class="flag">{{ lang.flag }}</span> {{ lang.label }}
-                    </button>
-                  </div>
-                </transition>
-              </div>
-            </div>
-
+            <h3 class="result-title">{{ t('classified_title') }}</h3>
             <p style="margin-bottom: 15px; color: var(--text-muted); font-size: 0.9rem;">
-              {{ translatedResult?.text || t('classified_text') }}
+              {{ t('classified_text') }}
             </p>
             <div 
               class="result-badge" 
@@ -254,10 +198,9 @@ const resetForm = () => {
             >
               <span class="result-icon-large">{{ getCategoryInfo(classificationResult)?.icon }}</span>
               <div class="result-info">
-                <strong>{{ translatedResult?.category || t('cat_' + classificationResult) }}</strong>
-                <span>{{ translatedResult?.forwarded || t('forwarded_to') }} {{ translatedResult?.category || t('cat_' + classificationResult) }}</span>
+                <strong>{{ t('cat_' + classificationResult) }}</strong>
+                <span>{{ t('forwarded_to') }} {{ t('cat_' + classificationResult) }}</span>
               </div>
-              <div v-if="isTranslating" class="mini-spinner"></div>
             </div>
           </div>
         </transition>
@@ -379,42 +322,6 @@ const resetForm = () => {
 .lang-dropdown button:hover {
   background: rgba(255,255,255,0.05);
   color: white;
-}
-
-/* MINI STYLES */
-.result-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 10px;
-}
-
-.lang-selector.mini {
-  position: relative;
-}
-
-.lang-btn.mini {
-  padding: 4px 8px;
-  background: rgba(255,255,255,0.05);
-  border-radius: 8px;
-  font-size: 0.8rem;
-}
-
-.lang-dropdown.mini {
-  right: 0;
-  top: 100%;
-  min-width: 120px;
-  font-size: 0.85rem;
-}
-
-.mini-spinner {
-  width: 14px;
-  height: 14px;
-  border: 2px solid rgba(255,255,255,0.2);
-  border-top-color: var(--primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-left: auto;
 }
 
 /* Toggle Views */

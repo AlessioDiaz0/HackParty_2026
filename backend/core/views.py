@@ -1,6 +1,9 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
+
 from .classifier_logic import ZeroShotClassifier
 from .models import Ticket
 from datetime import datetime
@@ -9,7 +12,11 @@ from .translations_data import BASE_TRANSLATIONS
 
 from .translator_logic import Translator
 
+@method_decorator(csrf_exempt, name='dispatch')
 class ClassifyView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
     def post(self, request):
         prompt = request.data.get('prompt')
         if not prompt:
@@ -29,6 +36,9 @@ class ClassifyView(APIView):
         return Response(result, status=status.HTTP_200_OK)
 
 class TicketListView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
     def get(self, request):
         tickets = Ticket.objects.all().order_by('-created_at')
         data = []
@@ -44,10 +54,17 @@ class TicketListView(APIView):
         return Response(data, status=status.HTTP_200_OK)
 
 class BaseTranslationsView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
     def get(self, request):
         return Response(BASE_TRANSLATIONS, status=status.HTTP_200_OK)
 
+@method_decorator(csrf_exempt, name='dispatch')
 class TranslateView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
     def post(self, request):
         source_strings = request.data.get('source_strings')
         target_lang = request.data.get('target_lang')
