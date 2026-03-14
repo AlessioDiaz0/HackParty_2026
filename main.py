@@ -34,10 +34,7 @@ def save_outcome(original: str, message: str, result: dict, doc_id: str,
         "target_lang": target_lang,
         "category": result["category"],
         "confidence": result["confidence"],
-<<<<<<< HEAD
-=======
         "urgency": result.get("urgency", "Medium"),
->>>>>>> 887641d488cb5ff9fc6f69f1f0427ef4c75f0cc3
     }
 
     with open(filepath, "w") as f:
@@ -53,23 +50,16 @@ def print_header():
     print("=" * 60)
 
 
-<<<<<<< HEAD
-def print_result(message: str, result: dict):
-    print(f"\n{'─' * 50}")
-    print(f"  Message:    {message}")
-    print(f"  Category:   {result['category']}")
-    print(f"  Confidence: {result['confidence']}")
-=======
-def print_result(original: str, translated: str, result: dict, source_lang: str):
+def print_result(original: str, translated: str, result: dict, source_lang: str, target_lang: str):
     urgency = result.get("urgency", "Medium")
     print(f"\n{'─' * 50}")
     print(f"  Original:    {original}")
-    if original != translated:
-        print(f"  Translated:  {translated}  (from {source_lang})")
+    print(f"  Translation: {translated}")
+    print(f"  Source lang: {source_lang}")
+    print(f"  Target lang: {target_lang}")
     print(f"  Category:    {result['category']}")
     print(f"  Confidence:  {result['confidence']}")
     print(f"  Urgency:     {urgency}")
->>>>>>> 887641d488cb5ff9fc6f69f1f0427ef4c75f0cc3
     print(f"{'─' * 50}")
 
 
@@ -146,10 +136,6 @@ def run_interactive():
             translated, result["category"], result["confidence"],
             urgency=result.get("urgency", "Medium"),
         )
-<<<<<<< HEAD
-        path = save_outcome(user_input, result, doc_id)
-        print_result(user_input, result)
-=======
 
         # Reorder display by urgency
         urgency_order = {"Critical": 0, "High": 1, "Medium": 2, "Low": 3}
@@ -161,8 +147,7 @@ def run_interactive():
             user_input, translated, result, doc_id,
             source_lang=source_lang, target_lang=lara.target_code,
         )
-        print_result(user_input, translated, result, source_lang)
->>>>>>> 887641d488cb5ff9fc6f69f1f0427ef4c75f0cc3
+        print_result(user_input, translated, result, source_lang, lara.target_code)
         print(f"  Saved to: {path}")
 
 

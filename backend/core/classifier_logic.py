@@ -21,19 +21,28 @@ DOMAIN_CATEGORIES = [
 SYSTEM_PROMPT = """\
 You are an expert customer-service message classifier.
 
-Your task: given a customer message, classify it into EXACTLY ONE of the
-following domain categories:
+Your task: given a customer message, do TWO things:
+
+1. Classify it into EXACTLY ONE of the following domain categories:
 
 {categories}
+
+2. Assess the urgency level based on tone, context, and operational impact:
+
+- Critical: Blocks production, immediate intervention required
+- High: Core functionality, current cycle
+- Medium: Important, next sprint
+- Low: Cosmetic, no operational impact
 
 Rules:
 1. Choose the single best-matching category from the list above.
 2. Do NOT invent new categories.
 3. Assess your confidence as "high", "medium", or "low".
-4. Respond ONLY with valid JSON — no extra text, no markdown fences.
+4. Assess urgency as "Critical", "High", "Medium", or "Low".
+5. Respond ONLY with valid JSON — no extra text, no markdown fences.
 
 Required JSON format:
-{{"category": "<chosen category>", "confidence": "<high|medium|low>", "reasoning": "<one-sentence explanation>"}}
+{{"category": "<chosen category>", "confidence": "<high|medium|low>", "urgency": "<Critical|High|Medium|Low>", "reasoning": "<one-sentence explanation>"}}
 """
 
 class ZeroShotClassifier:
@@ -81,11 +90,15 @@ class ZeroShotClassifier:
             result = {
                 "category": "Task",
                 "confidence": "low",
+                "urgency": "Medium",
                 "reasoning": f"Error processing LLM response: {str(e)}",
             }
 
         if result.get("category") not in self._categories:
             result["category"] = "Task"
             result["confidence"] = "low"
+
+        if result.get("urgency") not in ("Critical", "High", "Medium", "Low"):
+            result["urgency"] = "Medium"
 
         return result
