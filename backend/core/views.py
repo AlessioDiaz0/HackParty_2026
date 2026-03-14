@@ -7,12 +7,12 @@ from django.views.decorators.csrf import csrf_exempt
 from .classifier_logic import ZeroShotClassifier
 from .models import Ticket
 from datetime import datetime
+import os
 
 from .translations_data import BASE_TRANSLATIONS
 
 from .translator_logic import Translator
 
-@method_decorator(csrf_exempt, name='dispatch')
 class ClassifyView(APIView):
     authentication_classes = []
     permission_classes = []
@@ -22,16 +22,29 @@ class ClassifyView(APIView):
         if not prompt:
             return Response({"error": "Prompt field is required"}, status=status.HTTP_400_BAD_REQUEST)
         
+        # Translate to English
+        translated, source_lang = translate_to_english(prompt)
+        
+        # Classify the translated text
         classifier = ZeroShotClassifier()
-        result = classifier.classify(prompt)
+        result = classifier.classify(translated)
         
         # Save to database
         Ticket.objects.create(
             text=prompt,
+            translation=translated,
+            source_lang=source_lang,
+            target_lang="en",
             category=result['category'],
             confidence=result['confidence'],
+            urgency=result.get('urgency', 'Medium'),
             reasoning=result['reasoning']
         )
+        
+        result['original'] = prompt
+        result['translation'] = translated
+        result['source_lang'] = source_lang
+        result['target_lang'] = "en"
         
         return Response(result, status=status.HTTP_200_OK)
 
@@ -46,8 +59,12 @@ class TicketListView(APIView):
             data.append({
                 "id": t.id,
                 "text": t.text,
+                "translation": t.translation,
+                "source_lang": t.source_lang,
+                "target_lang": t.target_lang,
                 "category": t.category.lower(),
                 "confidence": t.confidence,
+                "urgency": t.urgency,
                 "reasoning": t.reasoning,
                 "date": t.created_at.strftime("%H:%M")
             })

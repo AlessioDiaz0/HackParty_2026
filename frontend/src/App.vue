@@ -27,6 +27,7 @@ const t = (key) => {
 const inputMessage = ref('')
 const isClassifying = ref(false)
 const classificationResult = ref(null)
+const classificationData = ref(null)
 
 // Simuliamo un database in memoria per le richieste
 const allRequests = ref([]) 
@@ -69,6 +70,7 @@ const classifyMessage = async () => {
 
   isClassifying.value = true
   classificationResult.value = null
+  classificationData.value = null
 
   try {
     console.log("Classifying: ", inputMessage.value)
@@ -89,6 +91,7 @@ const classifyMessage = async () => {
     const data = await response.json()
     console.log("Classifier Response: ", data)
     classificationResult.value = data.category.toLowerCase()
+    classificationData.value = data
   } catch (err) {
     console.error("Fallita comunicazione col backend. Uso mock:", err);
     console.warn("Modalità fallback Demo attiva.");
@@ -106,6 +109,15 @@ const classifyMessage = async () => {
     else if (text.match(/(ricerca|fattibilità|scoprire|studiare)/)) computedCategory = 'research';
 
     classificationResult.value = computedCategory;
+    classificationData.value = {
+      original: inputMessage.value,
+      translation: inputMessage.value,
+      source_lang: '',
+      target_lang: 'en',
+      category: computedCategory,
+      confidence: 'medium',
+      urgency: 'Medium'
+    };
   } finally {
     isClassifying.value = false;
     
@@ -117,6 +129,7 @@ const classifyMessage = async () => {
 const resetForm = () => {
   inputMessage.value = ''
   classificationResult.value = null
+  classificationData.value = null
 }
 
 // Ticket grouping removed as dashboard is no longer present
@@ -188,6 +201,31 @@ const resetForm = () => {
             <p style="margin-bottom: 15px; color: var(--text-muted); font-size: 0.9rem;">
               {{ t('classified_text') }}
             </p>
+
+            <!-- Translation details -->
+            <div v-if="classificationData" class="translation-details">
+              <div class="detail-row">
+                <span class="detail-label">Original:</span>
+                <span class="detail-value">{{ classificationData.original }}</span>
+              </div>
+              <div class="detail-row" v-if="classificationData.translation && classificationData.translation !== classificationData.original">
+                <span class="detail-label">Translation:</span>
+                <span class="detail-value">{{ classificationData.translation }}</span>
+              </div>
+              <div class="detail-row" v-if="classificationData.source_lang">
+                <span class="detail-label">Language:</span>
+                <span class="detail-value">{{ classificationData.source_lang }} → {{ classificationData.target_lang }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Confidence:</span>
+                <span class="detail-value confidence-badge" :class="'confidence-' + classificationData.confidence">{{ classificationData.confidence }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Urgency:</span>
+                <span class="detail-value urgency-badge" :class="'urgency-' + (classificationData.urgency || 'Medium').toLowerCase()">{{ classificationData.urgency || 'Medium' }}</span>
+              </div>
+            </div>
+
             <div 
               class="result-badge" 
               :style="{ 
@@ -561,8 +599,53 @@ textarea:disabled {
   text-transform: uppercase;
   letter-spacing: 1px;
   margin-bottom: 0.5rem;
-  font-weight: 700;
+/* Translation details */
+.translation-details {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
+
+.detail-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 0.875rem;
+}
+
+.detail-label {
+  color: var(--text-muted);
+  font-weight: 500;
+  min-width: 90px;
+  flex-shrink: 0;
+}
+
+.detail-value {
+  color: #e2e8f0;
+  word-break: break-word;
+}
+
+.confidence-badge, .urgency-badge {
+  padding: 2px 10px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.confidence-high { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+.confidence-medium { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+.confidence-low { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+
+.urgency-critical { background: rgba(239, 68, 68, 0.25); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+.urgency-high { background: rgba(249, 115, 22, 0.2); color: #fb923c; }
+.urgency-medium { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+.urgency-low { background: rgba(16, 185, 129, 0.2); color: #34d399; }
 
 .result-badge {
   display: flex;
